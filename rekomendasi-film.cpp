@@ -2,14 +2,15 @@
 #include <iomanip>
 #include <string>
 #include <queue>
-#include <vector>
-#include <algorithm>
+#include <set>
 using namespace std;
 
 struct Film {
     string judul;
     double rating;
-    vector<string> komentar;
+    string komentar[10];
+    int jumlahKomentar = 0;
+    bool favorit = false;
 };
 
 void tampilkanHeader(const string& judul) {
@@ -51,12 +52,13 @@ void tampilkanFilm(queue<Film> daftarFilm) {
     while (!daftarFilm.empty()) {
         Film film = daftarFilm.front();
         cout << "Judul: " << film.judul << "\nRating: " << fixed << setprecision(1) << film.rating << "\n";
-        if (!film.komentar.empty()) {
+        if (film.jumlahKomentar > 0) {
             cout << "Komentar:\n";
-            for (const auto& komentar : film.komentar) {
-                cout << "- " << komentar << "\n";
+            for (int i = 0; i < film.jumlahKomentar; ++i) {
+                cout << "- " << film.komentar[i] << "\n";
             }
         }
+        cout << "Favorit: " << (film.favorit ? "Ya" : "Tidak") << "\n";
         daftarFilm.pop();
     }
 }
@@ -80,11 +82,15 @@ void tambahKomentar(queue<Film>& daftarFilm) {
         Film film = daftarFilm.front();
         daftarFilm.pop();
         if (film.judul == judul) {
-            string komentar;
-            cout << "Masukkan komentar: ";
-            getline(cin, komentar);
-            film.komentar.push_back(komentar);
-            ditemukan = true;
+            if (film.jumlahKomentar < 10) {
+                string komentar;
+                cout << "Masukkan komentar: ";
+                getline(cin, komentar);
+                film.komentar[film.jumlahKomentar++] = komentar;
+                ditemukan = true;
+            } else {
+                cout << "Komentar penuh. Tidak dapat menambahkan komentar baru.\n";
+            }
         }
         temp.push(film);
     }
@@ -96,56 +102,150 @@ void tambahKomentar(queue<Film>& daftarFilm) {
     }
 }
 
-void cariFilm(queue<Film> daftarFilm) {
-    tampilkanHeader("Cari Film");
-    string keyword;
-    cout << "Masukkan keyword: ";
-    cin.ignore();
-    getline(cin, keyword);
-
-    bool ditemukan = false;
-    while (!daftarFilm.empty()) {
-        Film film = daftarFilm.front();
-        daftarFilm.pop();
-        if (film.judul.find(keyword) != string::npos) {
-            cout << "Judul: " << film.judul << "\nRating: " << fixed << setprecision(1) << film.rating << "\n";
-            ditemukan = true;
-        }
-    }
-    if (!ditemukan) {
-        cout << "Film dengan keyword '" << keyword << "' tidak ditemukan.\n";
-    }
-}
-
-void hapusFilmTerbaru(queue<Film>& daftarFilm) {
-    tampilkanHeader("Hapus Film Terbaru");
+void tambahFavorit(queue<Film>& daftarFilm) {
+    tampilkanHeader("Tambah ke Favorit");
     if (daftarFilm.empty()) {
-        cout << "Tidak ada film untuk dihapus.\n";
+        cout << "Belum ada film yang ditambahkan.\n";
         return;
     }
 
+    string judul;
+    cout << "Masukkan judul film yang ingin ditandai sebagai favorit: ";
+    cin.ignore();
+    getline(cin, judul);
+
     queue<Film> temp;
-    while (daftarFilm.size() > 1) {
-        temp.push(daftarFilm.front());
+    bool ditemukan = false;
+
+    while (!daftarFilm.empty()) {
+        Film film = daftarFilm.front();
         daftarFilm.pop();
+        if (film.judul == judul) {
+            film.favorit = true;
+            ditemukan = true;
+        }
+        temp.push(film);
     }
-    daftarFilm.pop();
     daftarFilm = temp;
-    cout << "Film terbaru berhasil dihapus.\n";
+    if (ditemukan) {
+        cout << "Film berhasil ditandai sebagai favorit.\n";
+    } else {
+        cout << "Film tidak ditemukan.\n";
+    }
 }
 
-void tampilkanFilmTerbaik(queue<Film> daftarFilm) {
-    tampilkanHeader("Film Berdasarkan Rating Tertinggi");
-    vector<Film> filmList;
+void lihatFavorit(queue<Film> daftarFilm) {
+    tampilkanHeader("Daftar Film Favorit");
+    bool adaFavorit = false;
     while (!daftarFilm.empty()) {
-        filmList.push_back(daftarFilm.front());
+        Film film = daftarFilm.front();
         daftarFilm.pop();
+        if (film.favorit) {
+            cout << "Judul: " << film.judul << "\nRating: " << fixed << setprecision(1) << film.rating << "\n";
+            adaFavorit = true;
+        }
     }
-    sort(filmList.begin(), filmList.end(), [](const Film& a, const Film& b) {
-        return a.rating > b.rating;
-    });
-    for (const auto& film : filmList) {
-        cout << "Judul: " << film.judul << "\nRating: " << fixed << setprecision(1) << film.rating << "\n";
+    if (!adaFavorit) {
+        cout << "Belum ada film favorit.\n";
+    }
+}
+
+void editRating(queue<Film>& daftarFilm) {
+    tampilkanHeader("Edit Rating Film");
+    if (daftarFilm.empty()) {
+        cout << "Belum ada film yang ditambahkan.\n";
+        return;
+    }
+
+    string judul;
+    cout << "Masukkan judul film yang ingin diubah ratingnya: ";
+    cin.ignore();
+    getline(cin, judul);
+
+    queue<Film> temp;
+    bool ditemukan = false;
+
+    while (!daftarFilm.empty()) {
+        Film film = daftarFilm.front();
+        daftarFilm.pop();
+        if (film.judul == judul) {
+            double ratingBaru;
+            do {
+                cout << "Masukkan rating baru (0-10): ";
+                cin >> ratingBaru;
+                if (ratingBaru < 0 || ratingBaru > 10) {
+                    cout << "Rating harus antara 0 hingga 10. Silakan coba lagi.\n";
+                }
+            } while (ratingBaru < 0 || ratingBaru > 10);
+            film.rating = ratingBaru;
+            ditemukan = true;
+        }
+        temp.push(film);
+    }
+    daftarFilm = temp;
+    if (ditemukan) {
+        cout << "Rating film berhasil diubah.\n";
+    } else {
+        cout << "Film tidak ditemukan.\n";
+    }
+}
+
+void hapusFilm(queue<Film>& daftarFilm) {
+    tampilkanHeader("Hapus Film Berdasarkan Judul");
+    if (daftarFilm.empty()) {
+        cout << "Belum ada film yang ditambahkan.\n";
+        return;
+    }
+
+    string judul;
+    cout << "Masukkan judul film yang ingin dihapus: ";
+    cin.ignore();
+    getline(cin, judul);
+
+    queue<Film> temp;
+    bool ditemukan = false;
+
+    while (!daftarFilm.empty()) {
+        Film film = daftarFilm.front();
+        daftarFilm.pop();
+        if (film.judul != judul) {
+            temp.push(film);
+        } else {
+            ditemukan = true;
+        }
+    }
+    daftarFilm = temp;
+    if (ditemukan) {
+        cout << "Film berhasil dihapus.\n";
+    } else {
+        cout << "Film tidak ditemukan.\n";
+    }
+}
+
+void urutkanFilm(queue<Film> daftarFilm) {
+    tampilkanHeader("Film Berdasarkan Urutan Judul");
+    set<string> judulSet;
+    queue<Film> temp;
+
+    while (!daftarFilm.empty()) {
+        Film film = daftarFilm.front();
+        daftarFilm.pop();
+        judulSet.insert(film.judul);
+        temp.push(film);
+    }
+
+    daftarFilm = temp;
+    for (const auto& judul : judulSet) {
+        queue<Film> temp2;
+        while (!daftarFilm.empty()) {
+            Film film = daftarFilm.front();
+            daftarFilm.pop();
+            if (film.judul == judul) {
+                cout << "Judul: " << film.judul << "\nRating: " << fixed << setprecision(1) << film.rating << "\nFavorit: " << (film.favorit ? "Ya" : "Tidak") << "\n";
+            }
+            temp2.push(film);
+        }
+        daftarFilm = temp2;
     }
 }
 
@@ -157,9 +257,11 @@ int main() {
         cout << "1. Tambah Film\n";
         cout << "2. Tampilkan Semua Film\n";
         cout << "3. Tambah Komentar\n";
-        cout << "4. Cari Film\n";
-        cout << "5. Hapus Film Terbaru\n";
-        cout << "6. Tampilkan Film Terbaik\n";
+        cout << "4. Tambah ke Favorit\n";
+        cout << "5. Lihat Film Favorit\n";
+        cout << "6. Edit Rating Film\n";
+        cout << "7. Hapus Film Berdasarkan Judul\n";
+        cout << "8. Urutkan Film Berdasarkan Judul\n";
         cout << "0. Keluar\n";
         cout << "Pilih menu: ";
         cin >> pilihan;
@@ -168,12 +270,15 @@ int main() {
             case 1: tambahFilm(daftarFilm); break;
             case 2: tampilkanFilm(daftarFilm); break;
             case 3: tambahKomentar(daftarFilm); break;
-            case 4: cariFilm(daftarFilm); break;
-            case 5: hapusFilmTerbaru(daftarFilm); break;
-            case 6: tampilkanFilmTerbaik(daftarFilm); break;
+            case 4: tambahFavorit(daftarFilm); break;
+            case 5: lihatFavorit(daftarFilm); break;
+            case 6: editRating(daftarFilm); break;
+            case 7: hapusFilm(daftarFilm); break;
+            case 8: urutkanFilm(daftarFilm); break;
             case 0: cout << "Keluar dari program.\n"; break;
             default: cout << "Pilihan tidak valid.\n";
         }
     } while (pilihan != 0);
     return 0;
 }
+
