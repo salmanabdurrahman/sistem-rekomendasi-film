@@ -3,6 +3,7 @@
 #include <string>
 #include <queue>
 #include <set>
+#include <algorithm>
 using namespace std;
 
 struct Film {
@@ -223,29 +224,26 @@ void hapusFilm(queue<Film>& daftarFilm) {
 }
 
 void urutkanFilm(queue<Film> daftarFilm) {
-    tampilkanHeader("Film Berdasarkan Urutan Judul");
-    set<string> judulSet;
-    queue<Film> temp;
-
-    while (!daftarFilm.empty()) {
-        Film film = daftarFilm.front();
-        daftarFilm.pop();
-        judulSet.insert(film.judul);
-        temp.push(film);
+    tampilkanHeader("Film Berdasarkan Urutan Rating");
+    if (daftarFilm.empty()) {
+        cout << "Belum ada film yang ditambahkan.\n";
+        return;
     }
 
-    daftarFilm = temp;
-    for (const auto& judul : judulSet) {
-        queue<Film> temp2;
-        while (!daftarFilm.empty()) {
-            Film film = daftarFilm.front();
-            daftarFilm.pop();
-            if (film.judul == judul) {
-                cout << "Judul: " << film.judul << "\nRating: " << fixed << setprecision(1) << film.rating << "\nFavorit: " << (film.favorit ? "Ya" : "Tidak") << "\n";
-            }
-            temp2.push(film);
-        }
-        daftarFilm = temp2;
+    vector<Film> filmList;
+    while (!daftarFilm.empty()) {
+        filmList.push_back(daftarFilm.front());
+        daftarFilm.pop();
+    }
+
+    sort(filmList.begin(), filmList.end(), [](const Film& a, const Film& b) {
+        return a.rating > b.rating;
+    });
+
+    for (const Film& film : filmList) {
+        cout << "Judul: " << film.judul 
+             << "\nRating: " << fixed << setprecision(1) << film.rating 
+             << "\nFavorit: " << (film.favorit ? "Ya" : "Tidak") << "\n\n";
     }
 }
 
@@ -261,7 +259,7 @@ int main() {
         cout << "5. Lihat Film Favorit\n";
         cout << "6. Edit Rating Film\n";
         cout << "7. Hapus Film Berdasarkan Judul\n";
-        cout << "8. Urutkan Film Berdasarkan Judul\n";
+        cout << "8. Urutkan Film Berdasarkan Rating\n";
         cout << "0. Keluar\n";
         cout << "Pilih menu: ";
         cin >> pilihan;
@@ -281,4 +279,3 @@ int main() {
     } while (pilihan != 0);
     return 0;
 }
-
